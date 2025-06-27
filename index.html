@@ -6,8 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.7/dist/signature_pad.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body{background:linear-gradient(135deg,#1a2980,#26d0ce);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;}
     .container{width:100%;max-width:740px;background:rgba(255,255,255,.98);border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.18);overflow:hidden;}
@@ -32,8 +30,10 @@
     .btn{padding:12px 28px;border:none;border-radius:50px;font-size:1.05rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px;min-width:120px;}
     .btn-clear{background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff;}
     .btn-submit{background:linear-gradient(135deg,#4285f4,#34a853);color:#fff;}
-    .btn-download{background:linear-gradient(135deg,#16a085,#3498db);color:#fff;}
     .status{display:none;text-align:center;margin-top:28px;}
+    .status-success{background:linear-gradient(135deg,#d4edda,#c3e6cb);color:#155724;padding:27px 16px 17px 16px;border-radius:13px;}
+    .status-error{background:linear-gradient(135deg,#fce8e6,#fbd4d1);color:#c5221f;padding:27px 16px 17px 16px;border-radius:13px;}
+    .status a{color:#256ad7;font-weight:bold;text-decoration:underline;}
     @media(max-width:650px){
       .container{max-width:99vw;}
       .content{padding:17px 6vw 16px 6vw;}
@@ -47,7 +47,7 @@
 <div class="container">
   <header>
     <h1><i class="fas fa-signature"></i> 消防特考班區隊長意向同意書</h1>
-    <p>請正確填寫下列表單並簽名，點「下載 PDF」即可產生檔案</p>
+    <p>請正確填寫下列表單並簽名，完成後點擊提交</p>
   </header>
   <div class="content">
     <div class="form-title">— 意向同意書填寫 —</div>
@@ -90,12 +90,25 @@
         </div>
       </div>
       <div class="controls">
-        <button class="btn btn-download" type="button" id="downloadPdfBtn"><i class="fas fa-download"></i> 下載 PDF</button>
+        <button class="btn btn-submit" type="submit"><i class="fas fa-paper-plane"></i> 提交同意書</button>
       </div>
     </form>
+    <div class="status status-success" id="successMsg">
+      <i class="fas fa-check-circle" style="font-size:2rem;"></i>
+      <div style="font-weight:700;font-size:1.10rem;margin-top:6px;">表單已成功送出！</div>
+      <div id="pdfLink" style="margin:14px 0 7px 0"></div>
+    </div>
+    <div class="status status-error" id="errorMsg">
+      <i class="fas fa-exclamation-triangle" style="font-size:2rem;"></i>
+      <div style="font-weight:700;font-size:1.08rem;margin-top:5px;">送出失敗</div>
+      <div id="errDetail" style="margin-top:7px;"></div>
+    </div>
   </div>
 </div>
 <script>
+  // n8n Webhook 連結，改成你自己的
+  const webhookUrl = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign";
+
   // ==== 畫布自適應與簽名提示 ====
   const canvas = document.getElementById('signatureCanvas');
   let signaturePad;
@@ -136,18 +149,17 @@
     document.getElementById("fillTime").value = `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
-  // ==== PDF 產生 ====
-  document.getElementById("downloadPdfBtn").onclick = async function(){
-    // 驗證
+  // ==== 送出表單到 n8n Webhook，顯示結果 ====
+  document.getElementById("agreementForm").onsubmit = async function(e){
+    e.preventDefault();
     if(signaturePad.isEmpty()){
-      alert("請簽名！");
+      showMsg(false,"請簽名");
       return;
     }
     if(!document.getElementById("name").value || !document.getElementById("idNumber").value || !document.getElementById("email").value){
-      alert("請填寫所有必填欄位！");
+      showMsg(false,"請填寫所有必填欄位");
       return;
     }
-    // 收集表單資料
     const data = {
       name: document.getElementById("name").value,
       idNumber: document.getElementById("idNumber").value,
@@ -156,38 +168,40 @@
       willingness: document.querySelector('input[name="willingness"]:checked').value,
       signature: signaturePad.toDataURL()
     };
-    // 產生一個畫面預覽 div 用來截圖（不顯示給使用者）
-    const preview = document.createElement('div');
-    preview.style.width = "600px";
-    preview.style.padding = "40px";
-    preview.style.background = "#fff";
-    preview.innerHTML = `
-      <h2 style="text-align:center;color:#2566c7;">消防特考班區隊長意向同意書</h2>
-      <hr>
-      <p><b>姓名：</b>${data.name}</p>
-      <p><b>身分證字號：</b>${data.idNumber}</p>
-      <p><b>公務信箱：</b>${data.email}</p>
-      <p><b>填寫時間：</b>${data.fillTime.replace('T',' ')}</p>
-      <p><b>114年消防特考班區隊長意願：</b>${data.willingness}</p>
-      <p style="margin-top:30px;"><b>電子簽名：</b></p>
-      <img src="${data.signature}" style="max-width:280px;border:1.5px solid #bbb;display:block;margin:20px 0 10px 0;">
-      <hr>
-      <p style="font-size:13px;color:#888;">表單填寫自動產生 | 僅供內部存檔</p>
-    `;
-    document.body.appendChild(preview);
-
-    // 用 html2canvas 轉成圖片再丟到 jsPDF
-    const canvasImg = await html2canvas(preview, {scale:2});
-    const imgData = canvasImg.toDataURL('image/png');
-    const pdf = new window.jspdf.jsPDF({
-      orientation: 'p',
-      unit: 'px',
-      format: [canvasImg.width, canvasImg.height+40]
-    });
-    pdf.addImage(imgData, 'PNG', 0, 0, canvasImg.width, canvasImg.height);
-    pdf.save(`消防特考班區隊長意向同意書_${data.name}.pdf`);
-    document.body.removeChild(preview);
+    showMsg(null,"處理中…");
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+      if(res.success){
+        document.getElementById("pdfLink").innerHTML =
+          res.pdfUrl
+            ? `<a href="${res.pdfUrl}" target="_blank">📄 下載 PDF</a>`
+            : "資料已送出！";
+        showMsg(true);
+        document.getElementById("agreementForm").reset();
+        signaturePad.clear();
+        setNow();
+      } else {
+        showMsg(false, res.error || "產生失敗，請稍後再試");
+      }
+    })
+    .catch(err => showMsg(false, "連線失敗：" + err));
   };
+  function showMsg(isOK, txt){
+    document.getElementById("successMsg").style.display = isOK === true ? "block" : "none";
+    document.getElementById("errorMsg").style.display = isOK === false ? "block" : "none";
+    if(isOK === false) document.getElementById("errDetail").innerText = txt||"";
+    if(isOK === null){
+      document.getElementById("successMsg").style.display = "none";
+      document.getElementById("errorMsg").style.display = "block";
+      document.getElementById("errDetail").innerText = txt||"";
+    }
+    if(isOK === true) document.getElementById("errDetail").innerText = "";
+  }
 </script>
 </body>
 </html>
