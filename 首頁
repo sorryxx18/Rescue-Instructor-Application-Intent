@@ -95,7 +95,7 @@
     </form>
     <div class="status status-success" id="successMsg">
       <i class="fas fa-check-circle" style="font-size:2rem;"></i>
-      <div style="font-weight:700;font-size:1.10rem;margin-top:6px;">PDF 已產生，請點下方下載：</div>
+      <div style="font-weight:700;font-size:1.10rem;margin-top:6px;">表單已成功送出！</div>
       <div id="pdfLink" style="margin:14px 0 7px 0"></div>
     </div>
     <div class="status status-error" id="errorMsg">
@@ -106,6 +106,9 @@
   </div>
 </div>
 <script>
+  // n8n Webhook 連結，改成你自己的
+  const webhookUrl = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign";
+
   // ==== 畫布自適應與簽名提示 ====
   const canvas = document.getElementById('signatureCanvas');
   let signaturePad;
@@ -127,78 +130,3 @@
       signaturePad = new SignaturePad(canvas,{backgroundColor:'#fff',penColor:'#222'});
     }
     signaturePad.addEventListener('beginStroke',()=>{document.getElementById('canvasPlaceholder').style.display='none';});
-    if (signaturePad.isEmpty()) document.getElementById('canvasPlaceholder').style.display='block';
-    else document.getElementById('canvasPlaceholder').style.display='none';
-  }
-  window.addEventListener('DOMContentLoaded',()=>{
-    resizeCanvas();
-    window.addEventListener('resize',resizeCanvas);
-    document.getElementById('clearBtn').onclick = ()=>{ signaturePad.clear(); document.getElementById('canvasPlaceholder').style.display='block'; };
-    setNow();
-  });
-  function setNow() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById("fillTime").value = `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
-
-  // ==== 送出表單到 GAS，顯示 PDF 連結 ====
-  document.getElementById("agreementForm").onsubmit = async function(e){
-    e.preventDefault();
-    if(signaturePad.isEmpty()){
-      showMsg(false,"請簽名");
-      return;
-    }
-    if(!document.getElementById("name").value || !document.getElementById("idNumber").value || !document.getElementById("email").value){
-      showMsg(false,"請填寫所有必填欄位");
-      return;
-    }
-    const data = {
-      name: document.getElementById("name").value,
-      idNumber: document.getElementById("idNumber").value,
-      email: document.getElementById("email").value,
-      fillTime: document.getElementById("fillTime").value,
-      willingness: document.querySelector('input[name="willingness"]:checked').value,
-      signature: signaturePad.toDataURL()
-    };
-    // GAS API 端點
-    const url = "https://script.google.com/macros/s/AKfycbxAk3_LNX88A_at6tAmuSsDVjXXfI3jep4ZndedHwEVK1TPsUDFwje2khVn5DOij0HgKw/exec";
-    showMsg(null,"處理中…");
-    fetch(url, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(res => {
-      if(res.success && res.pdfUrl){
-        document.getElementById("pdfLink").innerHTML =
-          `<a href="${res.pdfUrl}" target="_blank">📄 下載 PDF</a>`;
-        showMsg(true);
-        document.getElementById("agreementForm").reset();
-        signaturePad.clear();
-        setNow();
-      } else {
-        showMsg(false, res.error || "產生失敗，請稍後再試");
-      }
-    })
-    .catch(err => showMsg(false, "連線失敗：" + err));
-  };
-  function showMsg(isOK, txt){
-    document.getElementById("successMsg").style.display = isOK === true ? "block" : "none";
-    document.getElementById("errorMsg").style.display = isOK === false ? "block" : "none";
-    if(isOK === false) document.getElementById("errDetail").innerText = txt||"";
-    if(isOK === null){ // 處理中
-      document.getElementById("successMsg").style.display = "none";
-      document.getElementById("errorMsg").style.display = "block";
-      document.getElementById("errDetail").innerText = txt||"";
-    }
-    if(isOK === true) document.getElementById("errDetail").innerText = "";
-  }
-</script>
-</body>
-</html>
