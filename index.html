@@ -146,7 +146,7 @@
     document.getElementById("fillTime").value = `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
-  // ==== 送出表單到 GAS，顯示 PDF 連結 ====
+  // ==== 送出表單到 n8n webhook，顯示 PDF 連結 ====
   document.getElementById("agreementForm").onsubmit = async function(e){
     e.preventDefault();
     if(signaturePad.isEmpty()){
@@ -165,8 +165,8 @@
       willingness: document.querySelector('input[name="willingness"]:checked').value,
       signature: signaturePad.toDataURL()
     };
-    // GAS API 端點（這裡是你的新版網址！）
-    const url = "https://script.google.com/macros/s/AKfycbw9hxtUQdE1TcYHCnQrBtoOsyUlm2cLqSafo6TuuHxrxUU2i2TirICEyrN_KTV5or2B6Q/exec";
+    // n8n webhook 端點
+    const url = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign";
     showMsg(null,"處理中…");
     fetch(url, {
       method: "POST",
