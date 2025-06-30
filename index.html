@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="utf-8" />
-<title>支援內政部消防署特考班區隊長意願調查表</title>
+<title>支援內政部消防署一年期救助教官意願調查表</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 <link
 rel="stylesheet"
@@ -16,7 +16,8 @@ crossorigin="anonymous"
 html,
 body {
 min-height: 100%;
-background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+/* 修改配色 */
+background: linear-gradient(135deg, #4A5568, #A0AEC0);
 font-family: "Microsoft JhengHei", Arial, sans-serif;
 margin: 0;
 padding: 0;
@@ -32,7 +33,8 @@ overflow: visible;
 padding-bottom: 30px;
 }
 .headerbox {
-background: linear-gradient(100deg, #2450a7 40%, #19d1b5 100%);
+/* 修改配色 */
+background: linear-gradient(100deg, #2c3e50 40%, #e67e22 100%);
 color: #fff;
 border-top-left-radius: 56px;
 border-top-right-radius: 56px;
@@ -40,7 +42,8 @@ border-bottom-left-radius: 24px;
 border-bottom-right-radius: 24px;
 padding: 34px 22px 26px 22px;
 text-align: center;
-box-shadow: 0 2px 24px #0ca6c040;
+/* 修改配色 */
+box-shadow: 0 2px 24px #e67e2240;
 margin: 18px 22px 0 22px;
 position: relative;
 z-index: 1;
@@ -59,7 +62,8 @@ line-height: 1.7;
 .form-title {
 font-size: 1.14rem;
 text-align: center;
-color: #2566c7;
+/* 修改配色 */
+color: #2c3e50;
 font-weight: 700;
 margin: 32px 0 19px 0;
 }
@@ -77,7 +81,8 @@ margin-bottom: 19px;
 font-weight: 700;
 display: block;
 margin-bottom: 7px;
-color: #134199;
+/* 修改配色 */
+color: #2c3e50;
 }
 .form-group input,
 .form-group select {
@@ -90,7 +95,8 @@ background: #f7fafc;
 box-sizing: border-box;
 }
 .form-group input:focus {
-border-color: #256ad7;
+/* 修改配色 */
+border-color: #e67e22;
 outline: none;
 }
 .radio-group {
@@ -104,7 +110,8 @@ align-items: center;
 gap: 7px;
 font-weight: 700;
 font-size: 1.09rem;
-color: #106ad3;
+/* 修改配色 */
+color: #2c3e50;
 }
 .signature-section {
 margin: 36px 0 16px 0;
@@ -112,7 +119,8 @@ margin: 36px 0 16px 0;
 .signature-title {
 text-align: center;
 margin-bottom: 13px;
-color: #257be6;
+/* 修改配色 */
+color: #e67e22;
 font-size: 1.15rem;
 font-weight: 600;
 letter-spacing: 0.5px;
@@ -179,7 +187,8 @@ background: linear-gradient(135deg, #ff6b6b, #ffb36b);
 color: #fff;
 }
 .btn-submit {
-background: linear-gradient(135deg, #4285f4, #34a853);
+/* 修改配色 */
+background: linear-gradient(135deg, #2c3e50, #5a6878);
 color: #fff;
 }
 .btn:disabled {
@@ -227,7 +236,8 @@ width: 100%;
 <div class="container">
 <div class="headerbox">
 <h1>
-<i class="fas fa-file-alt"></i> 支援內政部消防署特考班區隊長意願調查表
+<!-- 修改標題 -->
+<i class="fas fa-file-alt"></i> 支援內政部消防署一年期救助教官意願調查表
 </h1>
 <p>請正確填寫下列表單並簽名，點「送出」即可產生 PDF 並自動寄送</p>
 </div>
@@ -255,7 +265,8 @@ width: 100%;
 <input type="datetime-local" id="fillTime" required />
 </div>
 <div class="form-group">
-<label>是否有意願支援特考班區隊長 *</label>
+<!-- 修改問題文字 -->
+<label>是否有意願支援一年期救助教官 *</label>
 <div class="radio-group">
 <label class="radio-option"><input type="radio" name="willingness" value="是，我有意願" required checked />是，我有意願</label>
 <label class="radio-option"><input type="radio" name="willingness" value="否，我無意願" />否，我無意願</label>
@@ -299,7 +310,7 @@ width: 100%;
 </div>
 </div>
 <script>
-// <<< 唯一修改處 >>>
+// 修改 Webhook URL
 const WEBHOOK_URL = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign-2";
 const canvas = document.getElementById("signatureCanvas");
 let signaturePad;
@@ -408,15 +419,18 @@ top: -9999px;
 font-family: 'Helvetica', 'Arial', 'Microsoft JhengHei', sans-serif;
 `;
 
-const willingnessColor = data.willingness === '是，我有意願' ? '#0056b3' : '#d9534f';
+// 同步修改 PDF 內配色邏輯
+const willingnessColor = data.willingness === '是，我有意願' ? '#28a745' : '#d9534f'; // Yes: Green, No: Red
 const willingnessText = data.willingness;
 const now = new Date();
 const generatedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
 preview.innerHTML = `
 <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px;">
-<h1 style="font-size: 26px; color: #333; margin: 0; font-weight: 900;">支援內政部消防署特考班區隊長</h1>
-<h2 style="font-size: 30px; color: #0056b3; margin: 8px 0 0 0; font-weight: 900;">意願調查表</h2>
+<!-- 修改 PDF 內標題 -->
+<h1 style="font-size: 26px; color: #333; margin: 0; font-weight: 900;">支援內政部消防署一年期救助教官</h1>
+<!-- 修改 PDF 內標題顏色以符合新主題 -->
+<h2 style="font-size: 30px; color: #e67e22; margin: 8px 0 0 0; font-weight: 900;">意願調查表</h2>
 </div>
 <div style="font-size: 18px; line-height: 2.5; color: #333; margin-top: 40px;">
 <p><strong>單　　位：</strong> ${data.unit}</p>
@@ -438,7 +452,6 @@ preview.innerHTML = `
 document.body.appendChild(preview);
 
 const placeholder = preview.querySelector('#signature-placeholder');
-// <<< 修改處 1: 降低解析度 >>>
 const scale = 1.2;
 
 const drawX = placeholder.offsetLeft * scale;
@@ -448,11 +461,10 @@ const drawHeight = placeholder.clientHeight * scale;
 
 const canvasImg = await html2canvas(preview, {
 scale: scale,
-useCORS: true // 建議加入以增加穩定性
+useCORS: true
 });
 document.body.removeChild(preview);
 
-// <<< 修改處 2: 將圖片格式改為JPEG >>>
 const imgData = canvasImg.toDataURL("image/jpeg", 0.9);
 
 const pdf = new window.jspdf.jsPDF({
@@ -460,7 +472,6 @@ orientation: "p",
 unit: "px",
 format: [canvasImg.width, canvasImg.height],
 });
-// <<< 修改處 3: 添加圖片時指定格式為JPEG並啟用壓縮 >>>
 pdf.addImage(imgData, "JPEG", 0, 0, canvasImg.width, canvasImg.height, undefined, 'FAST');
 
 pdf.addImage(data.signature, 'PNG', drawX, drawY, drawWidth, drawHeight);
@@ -475,7 +486,6 @@ formData.append("email", data.email);
 formData.append("fillTime", data.fillTime);
 formData.append("willingness", data.willingness);
 formData.append("signature", data.signature);
-// <<< 修改處 4: 套用您之前要求的檔名格式 >>>
 formData.append("file", pdfBlob, `${data.unit}${data.name}意願調查表.pdf`);
 
 const resp = await fetch(WEBHOOK_URL, { method: "POST", body: formData });
@@ -488,7 +498,7 @@ document.getElementById("canvasPlaceholder").style.display = 'block';
 setNow();
 
 } catch (err) {
-showMsg(false, err.message || "調查表送出失败，請再試一次");
+showMsg(false, err.message || "調查表送出失敗，請再試一次");
 } finally {
 submitBtn.disabled = false;
 submitBtn.innerHTML = originalBtnHTML;
