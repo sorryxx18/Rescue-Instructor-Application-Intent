@@ -124,7 +124,8 @@ background: #f5faff;
 position: relative;
 overflow: hidden;
 margin-bottom: 15px;
-height: 360px;
+/* <<< 第一道防線：縮小簽名板預設高度 >>> */
+height: 240px; 
 box-shadow: 0 2px 14px #e1e7f4a8;
 box-sizing: border-box;
 }
@@ -212,14 +213,16 @@ width: 100%;
 .headerbox { border-top-left-radius: 36px; border-top-right-radius: 36px; border-bottom-left-radius: 18px; border-bottom-right-radius: 18px; margin: 0; }
 .content { padding: 0 5vw; }
 .btn { font-size: 1.04rem; }
-.canvas-container { height: 250px; }
+/* <<< 第一道防線：同步縮小中等螢幕尺寸 >>> */
+.canvas-container { height: 220px; }
 }
 @media (max-width: 540px) {
 .headerbox { padding: 22px 2vw 15px 2vw; }
 .headerbox h1 { font-size: 1.5rem; }
 .content { padding: 0 2vw; }
 .btn { padding: 13px 0; min-width: 108px; }
-.canvas-container { height: 220px; }
+/* <<< 第一道防線：同步縮小手機螢幕尺寸 >>> */
+.canvas-container { height: 200px; }
 }
 </style>
 </head>
@@ -299,7 +302,7 @@ width: 100%;
 </div>
 </div>
 <script>
-// 使用您指定的 Webhook URL
+// 使用此問卷指定的 Webhook URL
 const WEBHOOK_URL = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign-2";
 const canvas = document.getElementById("signatureCanvas");
 let signaturePad;
@@ -311,21 +314,17 @@ const oldData = signaturePad ? signaturePad.toData() : null;
 const containerStyle = getComputedStyle(container);
 const newWidth = parseFloat(containerStyle.width);
 const newHeight = parseFloat(containerStyle.height);
-
 canvas.width = newWidth * ratio;
 canvas.height = newHeight * ratio;
 canvas.style.width = newWidth + "px";
 canvas.style.height = newHeight + "px";
-
 const ctx = canvas.getContext("2d");
 ctx.setTransform(1, 0, 0, 1, 0, 0);
 ctx.scale(ratio, ratio);
-
 if (signaturePad) {
 signaturePad.clear();
 }
 signaturePad = new SignaturePad(canvas, { backgroundColor: "#fff", penColor: "#222" });
-
 if (oldData) {
 signaturePad.fromData(oldData);
 }
@@ -358,30 +357,41 @@ const minutes = String(now.getMinutes()).padStart(2, "0");
 document.getElementById("fillTime").value = `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// 將 PDF 產生過程封裝成一個可重複使用的函式
+// <<< 第二道防線：壓縮簽名檔本身的輔助函式 >>>
+function getCompressedSignature(quality = 0.85) {
+    if (signaturePad.isEmpty()) return null;
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    const originalCanvas = signaturePad.canvas;
+    tempCanvas.width = originalCanvas.width;
+    tempCanvas.height = originalCanvas.height;
+    tempCtx.fillStyle = '#fff';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    tempCtx.drawImage(originalCanvas, 0, 0);
+    return tempCanvas.toDataURL('image/jpeg', quality);
+}
+
+// <<< 第三道防線：自適應 PDF 產生函式 >>>
 async function generatePdfBlob(data, options) {
     const preview = document.createElement("div");
-    preview.style.cssText = `
-        box-sizing: border-box; width: 800px; padding: 60px; background: #fff;
-        position: fixed; left: -9999px; top: -9999px;
-        font-family: 'Helvetica', 'Arial', 'Microsoft JhengHei', sans-serif;`;
+    preview.style.cssText = `box-sizing: border-box; width: 800px; padding: 60px; background: #fff; position: fixed; left: -9999px; top: -9999px; font-family: 'Helvetica', 'Arial', 'Microsoft JhengHei', sans-serif;`;
 
     const willingnessColor = data.willingness === '是，我有意願' ? '#28a745' : '#d9534f';
+    const willingnessText = data.willingness;
     const now = new Date();
     const generatedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+    // 確認 PDF 內的標題與主題顏色正確
     preview.innerHTML = `
         <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px;">
             <h1 style="font-size: 26px; color: #333; margin: 0; font-weight: 900;">支援內政部消防署一年期救助教官</h1>
             <h2 style="font-size: 30px; color: #e67e22; margin: 8px 0 0 0; font-weight: 900;">意願調查表</h2>
         </div>
         <div style="font-size: 18px; line-height: 2.5; color: #333; margin-top: 40px;">
-            <p><strong>單　　位：</strong> ${data.unit}</p>
-            <p><strong>職　　稱：</strong> ${data.jobTitle}</p>
-            <p><strong>姓　　名：</strong> ${data.name}</p>
-            <p><strong>公務信箱：</strong> ${data.email}</p>
+            <p><strong>單　　位：</strong> ${data.unit}</p><p><strong>職　　稱：</strong> ${data.jobTitle}</p>
+            <p><strong>姓　　名：</strong> ${data.name}</p><p><strong>公務信箱：</strong> ${data.email}</p>
             <p><strong>填寫時間：</strong> ${data.fillTime.replace("T", " ")}</p>
-            <p><strong>支援意願：</strong> <span style="font-weight: bold; color: ${willingnessColor};">${data.willingness}</span></p>
+            <p><strong>支援意願：</strong> <span style="font-weight: bold; color: ${willingnessColor};">${willingnessText}</span></p>
         </div>
         <div style="margin-top: 60px;">
             <p style="font-size: 18px; color: #333; margin-bottom: 15px;"><strong>本 人 簽 名：</strong></p>
@@ -402,13 +412,9 @@ async function generatePdfBlob(data, options) {
     document.body.removeChild(preview);
 
     const imgData = canvasImg.toDataURL("image/jpeg", options.quality);
-    const pdf = new window.jspdf.jsPDF({
-        orientation: "p",
-        unit: "px",
-        format: [canvasImg.width, canvasImg.height],
-    });
+    const pdf = new window.jspdf.jsPDF({ orientation: "p", unit: "px", format: [canvasImg.width, canvasImg.height] });
     pdf.addImage(imgData, "JPEG", 0, 0, canvasImg.width, canvasImg.height, undefined, 'FAST');
-    pdf.addImage(data.signature, 'PNG', drawX, drawY, drawWidth, drawHeight);
+    pdf.addImage(data.signatureJpeg, 'JPEG', drawX, drawY, drawWidth, drawHeight);
 
     return pdf.output("blob");
 }
@@ -422,20 +428,11 @@ document.getElementById("agreementForm").onsubmit = async function (e) {
     showMsg(null);
 
     try {
-        const requiredFields = [
-            { id: 'unit', name: '單位' },
-            { id: 'jobTitle', name: '職稱' },
-            { id: 'name', name: '姓名' },
-            { id: 'email', name: '公務信箱' },
-        ];
+        const requiredFields = [{ id: 'unit', name: '單位' }, { id: 'jobTitle', name: '職稱' }, { id: 'name', name: '姓名' }, { id: 'email', name: '公務信箱' }];
         for (const field of requiredFields) {
-            if (!document.getElementById(field.id).value) {
-                throw new Error(`請填寫「${field.name}」欄位`);
-            }
+            if (!document.getElementById(field.id).value) throw new Error(`請填寫「${field.name}」欄位`);
         }
-        if (signaturePad.isEmpty()) {
-            throw new Error("請務必在指定區域簽名");
-        }
+        if (signaturePad.isEmpty()) throw new Error("請務必在指定區域簽名");
 
         const data = {
             unit: document.getElementById("unit").value,
@@ -444,29 +441,22 @@ document.getElementById("agreementForm").onsubmit = async function (e) {
             email: document.getElementById("email").value,
             fillTime: document.getElementById("fillTime").value,
             willingness: document.querySelector('input[name="willingness"]:checked').value,
-            signature: signaturePad.toDataURL(),
+            signature: signaturePad.toDataURL(), 
+            signatureJpeg: getCompressedSignature(0.85)
         };
 
-        // <<< 自適應壓縮邏輯開始 >>>
         const highQualityOptions = { scale: 1.2, quality: 0.9 };
         const lowQualityOptions = { scale: 1.0, quality: 0.7 };
         const MAX_SIZE_MB = 2;
-
-        // 1. 第一次嘗試：使用高品質設定
         let pdfBlob = await generatePdfBlob(data, highQualityOptions);
         
-        // 2. 檢查檔案大小
         if (pdfBlob.size > MAX_SIZE_MB * 1024 * 1024) {
             console.warn(`PDF檔案過大(${(pdfBlob.size / 1024 / 1024).toFixed(2)}MB)，自動嘗試更高壓縮率...`);
-            // 3. 如果過大，第二次嘗試：使用低品質設定
             pdfBlob = await generatePdfBlob(data, lowQualityOptions);
-
-            // 4. 最終防線檢查
             if (pdfBlob.size > MAX_SIZE_MB * 1024 * 1024) {
-                throw new Error(`PDF檔案過大(${(pdfBlob.size / 1024 / 1024).toFixed(2)}MB)，即使經過強力壓縮仍無法上傳。請清除後重新簽署一個較簡單的簽名。`);
+                throw new Error(`PDF檔案過大(${(pdfBlob.size / 1024 / 1024).toFixed(2)}MB)，系統已盡力壓縮仍無法上傳。`);
             }
         }
-        // <<< 自適應壓縮邏輯結束 >>>
 
         const formData = new FormData();
         formData.append("unit", data.unit);
@@ -479,9 +469,7 @@ document.getElementById("agreementForm").onsubmit = async function (e) {
         formData.append("file", pdfBlob, `${data.unit}${data.name}意願調查表.pdf`);
 
         const resp = await fetch(WEBHOOK_URL, { method: "POST", body: formData });
-        if (!resp.ok) {
-            throw new Error("伺服器回應錯誤，請洽系統管理員");
-        }
+        if (!resp.ok) throw new Error("伺服器回應錯誤，請洽系統管理員");
 
         showMsg(true);
         document.getElementById("agreementForm").reset();
