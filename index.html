@@ -310,7 +310,7 @@ width: 100%;
 </div>
 </div>
 <script>
-// 修改 Webhook URL
+// 維持您指定的 Webhook URL
 const WEBHOOK_URL = "https://n8n-emculoyh.ap-northeast-1.clawcloudrun.com/webhook/fire-sign-2";
 const canvas = document.getElementById("signatureCanvas");
 let signaturePad;
@@ -419,7 +419,6 @@ top: -9999px;
 font-family: 'Helvetica', 'Arial', 'Microsoft JhengHei', sans-serif;
 `;
 
-// 同步修改 PDF 內配色邏輯
 const willingnessColor = data.willingness === '是，我有意願' ? '#28a745' : '#d9534f'; // Yes: Green, No: Red
 const willingnessText = data.willingness;
 const now = new Date();
@@ -427,9 +426,7 @@ const generatedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStar
 
 preview.innerHTML = `
 <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px;">
-<!-- 修改 PDF 內標題 -->
 <h1 style="font-size: 26px; color: #333; margin: 0; font-weight: 900;">支援內政部消防署一年期救助教官</h1>
-<!-- 修改 PDF 內標題顏色以符合新主題 -->
 <h2 style="font-size: 30px; color: #e67e22; margin: 8px 0 0 0; font-weight: 900;">意願調查表</h2>
 </div>
 <div style="font-size: 18px; line-height: 2.5; color: #333; margin-top: 40px;">
@@ -477,6 +474,11 @@ pdf.addImage(imgData, "JPEG", 0, 0, canvasImg.width, canvasImg.height, undefined
 pdf.addImage(data.signature, 'PNG', drawX, drawY, drawWidth, drawHeight);
 
 const pdfBlob = pdf.output("blob");
+
+// <<< 新增：檢查 PDF 檔案大小是否超過 2MB >>>
+if (pdfBlob.size > 2 * 1024 * 1024) {
+    throw new Error("產生的PDF檔案超過2MB，請嘗試清除簽名後重新簽署，或聯繫管理員。");
+}
 
 const formData = new FormData();
 formData.append("unit", data.unit);
